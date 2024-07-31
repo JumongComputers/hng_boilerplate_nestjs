@@ -1,58 +1,74 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
-import { ArticleInterface } from './article.interface';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Injectable()
 export class EmailService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    @InjectQueue('email') private readonly emailQueue: Queue
+  ) {}
 
-  async sendUserConfirmationMail(email: string, url: string, token: string) {
-    const link = `${url}?token=${token}`;
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Welcome to My App! Confirm your Email',
-      template: 'confirmation',
-      context: {
-        link,
-        email,
-      },
-    });
+  // Sends email immediately using the MailerService
+  async sendMail(email: string, template: string, context: any) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Notification', // Consider making subject dynamic or configurable
+        template: template,
+        context: context,
+      });
+    } catch (error) {
+      // Handle error if sending email fails
+      throw new Error(`Failed to send email: ${error.message}`);
+    }
   }
 
-  async sendForgotPasswordMail(email: string, url: string, token: string) {
-    const link = `${url}?token=${token}`;
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Reset Password',
-      template: 'reset-password',
-      context: {
-        link,
+  // Adds email job to the queue
+  async addEmailToQueue(email: string, template: string, context: any) {
+    try {
+      await this.emailQueue.add('sendEmail', {
         email,
-      },
-    });
+        template,
+        context,
+      });
+    } catch (error) {
+      // Handle error if adding to queue fails
+      throw new Error(`Failed to add email to queue: ${error.message}`);
+    }
   }
 
-  async sendWaitListMail(email: string, url: string) {
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Waitlist Confirmation',
-      template: 'waitlist',
-      context: {
-        url,
-        email,
-      },
-    });
-  }
+  // Additional methods can be uncommented and used as needed
+  // async sendTicketEmail(email: string, ticketDetails: any) {
+  //   await this.emailQueue.add('sendEmail', {
+  //     email,
+  //     template: 'ticket',
+  //     context: { ticketDetails },
+  //   });
+  // }
 
-  async sendNewsLetterMail(email: string, articles: ArticleInterface[]) {
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Monthly Newsletter',
-      template: 'newsletter',
-      context: {
-        email,
-        articles,
-      },
-    });
-  }
+  // async sendInvoiceEmail(email: string, invoiceDetails: any) {
+  //   await this.emailQueue.add('sendEmail', {
+  //     email,
+  //     template: 'invoice',
+  //     context: { invoiceDetails },
+  //   });
+  // }
+
+  // async sendEmailVerification(email: string, verificationCode: string) {
+  //   await this.emailQueue.add('sendEmail', {
+  //     email,
+  //     template: 'email-verification',
+  //     context: { verificationCode },
+  //   });
+  // }
+
+  // async sendPaymentReceiptEmail(email: string, receiptDetails: any) {
+  //   await this.emailQueue.add('sendEmail', {
+  //     email,
+  //     template: 'payment-receipt',
+  //     context: { receiptDetails },
+  //   });
+  // }
 }

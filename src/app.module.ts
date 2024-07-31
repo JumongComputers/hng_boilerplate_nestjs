@@ -1,8 +1,8 @@
-import { MailerModule } from '@nestjs-modules/mailer';
 import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import authConfig from '../config/auth.config';
@@ -18,17 +18,13 @@ import { OtpService } from './modules/otp/otp.service';
 import { OrganisationsModule } from './modules/organisations/organisations.module';
 import { AuthGuard } from './guards/auth.guard';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { EmailService } from './modules/email/email.service';
-import { EmailModule } from './modules/email/email.module';
+import { EmailQueueModule } from './modules/email/email.queue.module';
 import { InviteModule } from './modules/invite/invite.module';
 import { TestimonialsModule } from './modules/testimonials/testimonials.module';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   providers: [
-    {
-      provide: 'CONFIG',
-      useClass: ConfigService,
-    },
     {
       provide: APP_PIPE,
       useFactory: () =>
@@ -38,7 +34,6 @@ import { TestimonialsModule } from './modules/testimonials/testimonials.module';
         }),
     },
     OtpService,
-    EmailService,
     {
       provide: 'APP_GUARD',
       useClass: AuthGuard,
@@ -46,18 +41,9 @@ import { TestimonialsModule } from './modules/testimonials/testimonials.module';
   ],
   imports: [
     ConfigModule.forRoot({
-      /**
-       * By default, the package looks for a .env file in the root directory of the application.
-       * We don't use ".env" file because it is prioritize as the same level as real environment variables.
-       * To specify multiple .env files, set the envFilePath property.
-       * If a variable is found in multiple files, the first one takes precedence.
-       */
       envFilePath: ['.env.development.local', `.env.${process.env.PROFILE}`],
       isGlobal: true,
       load: [serverConfig, authConfig],
-      /**
-       * See ".env.local" file to list all environment variables needed by the app
-       */
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().valid('development', 'production', 'test', 'provision').required(),
         PROFILE: Joi.string().valid('local', 'development', 'production', 'ci', 'testing', 'staging').required(),
@@ -71,11 +57,20 @@ import { TestimonialsModule } from './modules/testimonials/testimonials.module';
       }),
       dataSourceFactory: async () => dataSource,
     }),
+    BullModule.forRoot({
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'email',
+    }),
     SeedingModule,
     AuthModule,
     UserModule,
     OtpModule,
-    EmailModule,
+    EmailQueueModule,
     InviteModule,
     BlogModule,
     MailerModule.forRootAsync({

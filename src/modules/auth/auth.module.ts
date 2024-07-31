@@ -1,31 +1,34 @@
 import { Module } from '@nestjs/common';
-import RegistrationController from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import appConfig from '../../../config/auth.config';
-import { Repository } from 'typeorm';
+
+import RegistrationController from './auth.controller';
 import AuthenticationService from './auth.service';
 import UserService from '../user/user.service';
-import { OtpModule } from '../otp/otp.module';
-import { EmailModule } from '../email/email.module';
 import { OtpService } from '../otp/otp.service';
 import { EmailService } from '../email/email.service';
+
+import { User } from '../user/entities/user.entity';
 import { Otp } from '../otp/entities/otp.entity';
+
+import { OtpModule } from '../otp/otp.module';
+import { EmailQueueModule } from '../email/email.queue.module';
+
+import authConfig from '../../../config/auth.config';
 
 @Module({
   controllers: [RegistrationController],
-  providers: [AuthenticationService, Repository, UserService, OtpService, EmailService],
+  providers: [AuthenticationService, UserService, OtpService, EmailService],
   imports: [
     TypeOrmModule.forFeature([User, Otp]),
     PassportModule,
     OtpModule,
-    EmailModule,
+    EmailQueueModule,
     JwtModule.register({
       global: true,
-      secret: appConfig().jwtSecret,
-      signOptions: { expiresIn: `${appConfig().jwtExpiry}s` },
+      secret: authConfig().jwtSecret,
+      signOptions: { expiresIn: `${authConfig().jwtExpiry}s` },
     }),
   ],
 })

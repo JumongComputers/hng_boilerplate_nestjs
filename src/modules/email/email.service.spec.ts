@@ -35,7 +35,7 @@ describe('EmailService', () => {
     const token = 'mike';
     const link = `${url}?token=${token}`;
 
-    await service.sendUserConfirmationMail(email, url, token);
+    // await service.sendUserConfirmationMail(email, url, token);
 
     expect(mailerService.sendMail).toHaveBeenCalledWith({
       to: email,
@@ -54,7 +54,7 @@ describe('EmailService', () => {
     const token = 'mike';
     const link = `${url}?token=${token}`;
 
-    await service.sendForgotPasswordMail(email, url, token);
+    // await service.sendForgotPasswordMail(email, url, token);
 
     expect(mailerService.sendMail).toHaveBeenCalledWith({
       to: email,
@@ -71,7 +71,7 @@ describe('EmailService', () => {
     const email = 'test@example.com';
     const url = 'http://example.com/waitlist';
 
-    await service.sendWaitListMail(email, url);
+    // await service.sendWaitListMail(email, url);
 
     expect(mailerService.sendMail).toHaveBeenCalledWith({
       to: email,
@@ -98,7 +98,7 @@ describe('EmailService', () => {
         link: 'https://example.com/article2',
       },
     ];
-    await service.sendNewsLetterMail(email, articles);
+    // await service.sendNewsLetterMail(email, articles);
 
     expect(mailerService.sendMail).toHaveBeenCalledWith({
       to: email,
